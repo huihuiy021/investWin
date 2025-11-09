@@ -17,7 +17,7 @@ interface Asset {
 
 interface ApiResponse {
   success: boolean
-  data: Asset[]
+  assets: Asset[]
   count: number
 }
 
@@ -39,7 +39,7 @@ function App() {
       const data: ApiResponse = await response.json()
 
       if (data.success) {
-        setAssets(data.data)
+        setAssets(data.assets)
         message.success(`成功加载 ${data.count} 只股票！`)
       } else {
         message.error('数据加载失败')

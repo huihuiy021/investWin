@@ -7,8 +7,8 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from typing import List, Dict, Any
 import os
-import asyncpg
 from datetime import datetime
+from database import db_service
 
 app = FastAPI(
     title="InvestWin Business Service",
@@ -25,20 +25,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# 数据库连接
-DATABASE_URL = os.getenv(
-    "DATABASE_URL",
-    "postgresql://huihui:investwin123@localhost:5432/investwin"
-)
-
-class DatabaseService:
-    def __init__(self):
-        self.connection_string = DATABASE_URL
-
-    async def get_connection(self):
-        return await asyncpg.connect(self.connection_string)
-
-db_service = DatabaseService()
+# 数据库连接已从 database.py 模块导入
 
 # 导入业务逻辑模块
 from services.technical_indicators import TechnicalIndicatorsService
@@ -129,6 +116,68 @@ async def analyze_portfolio(symbols: List[str]):
             "success": True,
             "portfolio": symbols,
             "analysis": analysis,
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# ========== 基础数据查询接口 ==========
+@app.get("/api/assets")
+async def get_assets():
+    """获取所有资产列表"""
+    try:
+        assets = await db_service.get_stocks()
+        return {
+            "success": True,
+            "assets": assets,
+            "count": len(assets),
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/assets/{symbol}")
+async def get_asset_by_symbol(symbol: str):
+    """根据代码获取资产信息"""
+    try:
+        asset = await db_service.get_stock_by_symbol(symbol.upper())
+        if not asset:
+            raise HTTPException(status_code=404, detail=f"Asset {symbol} not found")
+
+        return {
+            "success": True,
+            "asset": asset,
+            "timestamp": datetime.now().isoformat()
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/assets/{symbol}/technical-indicators")
+async def get_asset_technical_indicators(symbol: str):
+    """获取资产技术指标"""
+    try:
+        indicators = await db_service.get_technical_indicators(symbol.upper())
+        return {
+            "success": True,
+            "symbol": symbol.upper(),
+            "technical_indicators": indicators,
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/assets/{symbol}/price-history")
+async def get_asset_price_history(symbol: str, days: int = 30):
+    """获取资产价格历史"""
+    try:
+        price_history = await db_service.get_price_history(symbol.upper(), days)
+        return {
+            "success": True,
+            "symbol": symbol.upper(),
+            "price_history": price_history,
+            "count": len(price_history),
             "timestamp": datetime.now().isoformat()
         }
     except Exception as e:

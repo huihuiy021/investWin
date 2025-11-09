@@ -65,5 +65,21 @@ class BusinessServiceClient:
         """分析投资组合"""
         return await self._make_request("POST", "/api/portfolio-analysis", data=symbols)
 
+    async def get_assets(self) -> Dict[str, Any]:
+        """获取所有资产列表"""
+        return await self._make_request("GET", "/api/assets")
+
+    async def get_asset_by_symbol(self, symbol: str) -> Dict[str, Any]:
+        """根据代码获取资产信息"""
+        return await self._make_request("GET", f"/api/assets/{symbol}")
+
+    async def get_asset_technical_indicators(self, symbol: str) -> Dict[str, Any]:
+        """获取资产技术指标"""
+        return await self._make_request("GET", f"/api/assets/{symbol}/technical-indicators")
+
+    async def get_asset_price_history(self, symbol: str, days: int = 30) -> Dict[str, Any]:
+        """获取资产价格历史"""
+        return await self._make_request("GET", f"/api/assets/{symbol}/price-history?days={days}")
+
 # 全局服务客户端实例
 business_client = BusinessServiceClient()
