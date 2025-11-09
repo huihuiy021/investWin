@@ -1,7 +1,29 @@
 # 投资资产分析跟踪平台设计方案
 
 ## 项目概述
-一个基于 **React + Python + PostgreSQL** 的投资资产分析跟踪平台，专注于投资机会挖掘和风险控制。
+一个基于 **React + Python + PostgreSQL** 的投资资产分析跟踪平台，采用**微服务架构**，专注于投资机会挖掘和风险控制。
+
+## 架构设计理念
+
+### 🏗️ **微服务分离架构**
+采用 **Web 服务 + 业务服务** 分离设计，实现职责清晰、独立扩展、高可维护性的系统架构。
+
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   Frontend       │    │  Web Service     │    │ Business Service │
+│   (React)        │───▶│  (FastAPI)       │───▶│  (Python)        │
+│                 │    │  Port: 8000      │    │  Port: 8001      │
+│ • 用户界面       │    │ • HTTP API       │    │ • 业务逻辑       │
+│ • 数据展示       │    │ • 用户认证       │    │ • 投资分析       │
+│ • 交互操作       │    │ • 请求路由       │    │ • 风险计算       │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+                                │                       │
+                                ▼                       ▼
+                       ┌─────────────────┐    ┌─────────────────┐
+                       │   PostgreSQL     │    │   Redis Cache    │
+                       │   Database       │    │                 │
+                       └─────────────────┘    └─────────────────┘
+```
 
 ## 核心功能模块
 
@@ -25,22 +47,51 @@
 
 ## 技术架构
 
-### **后端 (Python + FastAPI)**
-- **框架选择**：FastAPI（高性能、自动API文档）
-- **核心库**：pandas/numpy（数据处理）、SQLAlchemy（ORM）、Redis（缓存）
-- **实时通信**：WebSocket支持实时数据推送
-- **任务调度**：Celery处理定时数据更新和分析任务
-
-### **前端 (React + TypeScript)**
+### **🌐 前端层 (React + TypeScript)**
 - **UI框架**：Ant Design（专业组件库）
 - **状态管理**：Redux Toolkit（可预测状态管理）
 - **数据可视化**：Chart.js/Recharts（交互式图表）
-- **样式方案**：Tailwind CSS（快速样式开发）
+- **HTTP客户端**：Axios（API请求）
+- **实时通信**：WebSocket（实时数据更新）
 
-### **数据库 (PostgreSQL)**
-- **优势利用**：JSONB存储复杂金融数据、时间序列优化、窗口函数支持
-- **分区策略**：按时间分区存储历史数据，提升查询性能
-- **扩展性**：支持自定义函数和复杂分析查询
+### **🔌 Web 服务层 (FastAPI - Port: 8000)**
+- **框架选择**：FastAPI（高性能、自动API文档）
+- **核心职责**：
+  - HTTP API 接口处理
+  - 用户认证和授权（JWT）
+  - 请求参数验证
+  - 响应格式化
+  - 与前端通信
+  - 调用业务服务
+- **核心库**：SQLAlchemy（ORM）、Pydantic（数据验证）、httpx（服务间通信）
+
+### **⚙️ 业务服务层 (Python - Port: 8001)**
+- **框架选择**：FastAPI（轻量级API）
+- **核心职责**：
+  - 投资机会挖掘算法
+  - 技术指标计算（MA、RSI、MACD等）
+  - 风险评估模型（VaR、最大回撤、波动率）
+  - 投资组合优化
+  - 数据分析和处理
+- **核心库**：pandas/numpy（数据处理）、yfinance（数据获取）、TA-Lib（技术指标）
+
+### **🗄️ 数据存储层**
+#### **PostgreSQL (主数据库)**
+- **用户数据**：账户信息、偏好设置
+- **投资数据**：资产信息、交易记录、持仓数据
+- **分析结果**：风险评估、机会挖掘结果
+- **优势利用**：JSONB存储复杂数据、时间序列优化、窗口函数
+
+#### **Redis (缓存层)**
+- **实时数据缓存**：股票价格、技术指标
+- **计算结果缓存**：分析结果、风险评估
+- **会话管理**：用户认证信息
+- **任务队列**：异步分析任务
+
+### **📡 服务间通信**
+- **同步通信**：HTTP REST API（Web → Business）
+- **异步通信**：Redis Pub/Sub（事件驱动）
+- **数据格式**：JSON（标准化的数据交换格式）
 
 ## 数据库设计
 
@@ -1146,28 +1197,242 @@ CREATE INDEX idx_portfolios_user_active ON portfolios(user_id, is_active);
 CREATE INDEX idx_technical_indicators_rsi ON technical_indicators USING GIN ((indicators->'rsi'));
 ```
 
-## 开发优势
+## 📁 项目结构
 
-1. **前后端分离**：独立开发和部署，灵活性高
-2. **实时数据**：WebSocket支持毫秒级数据更新
-3. **智能分析**：基于算法的机会自动识别
-4. **风险可控**：多层次风险监控和预警
-5. **扩展性强**：模块化设计，便于功能扩展
-6. **数据丰富**：支持股票、期权、期货多资产类别
-7. **专业分析**：技术面、资金面、衍生品全覆盖
+### **微服务目录结构**
+```
+investwin/
+├── frontend/                 # React 前端应用
+│   ├── src/
+│   │   ├── components/     # UI组件
+│   │   ├── pages/          # 页面组件
+│   │   ├── services/       # API服务
+│   │   └── store/          # 状态管理
+│   └── package.json
+├── web-service/             # Web API服务 (Port: 8000)
+│   ├── app/
+│   │   ├── api/            # API路由层
+│   │   │   ├── auth/       # 认证相关
+│   │   │   ├── assets/     # 资产管理
+│   │   │   └── portfolios/ # 投资组合
+│   │   ├── auth/           # 认证模块
+│   │   ├── models/         # 数据模型
+│   │   ├── client.py       # 业务服务客户端
+│   │   └── main.py         # Web服务入口
+│   └── requirements.txt
+├── business-service/        # 业务逻辑服务 (Port: 8001)
+│   ├── app/
+│   │   ├── services/       # 业务服务层
+│   │   │   ├── analysis/   # 分析服务
+│   │   │   │   ├── technical/  # 技术分析
+│   │   │   │   ├── fundamental/ # 基本面分析
+│   │   │   │   └── sentiment/   # 情绪分析
+│   │   │   ├── risk/        # 风险评估
+│   │   │   └── opportunity/ # 机会挖掘
+│   │   ├── algorithms/     # 算法模块
+│   │   │   ├── indicators/  # 技术指标
+│   │   │   ├── patterns/    # 形态识别
+│   │   │   └── optimization/ # 组合优化
+│   │   ├── models/         # 业务模型
+│   │   └── main.py         # 业务服务入口
+│   └── requirements.txt
+├── shared/                   # 共享代码
+│   ├── models/              # 共享数据模型
+│   ├── utils/               # 共享工具函数
+│   └── config/              # 配置文件
+└── docker-compose.yml       # 容器编排配置
+```
 
-## API接口设计
+## 📡 服务间通信
 
-### **核心接口**
+### **通信架构**
+```mermaid
+sequenceDiagram
+    participant Frontend
+    participant WebService
+    participant BusinessService
+    participant Database
+    participant Cache
+
+    Frontend->>WebService: HTTP请求 (API调用)
+    WebService->>WebService: 用户认证/参数验证
+    WebService->>BusinessService: HTTP调用 (业务逻辑)
+    BusinessService->>Cache: 检查缓存数据
+    alt 缓存命中
+        Cache-->>BusinessService: 返回缓存数据
+    else 缓存未命中
+        BusinessService->>Database: 查询/计算数据
+        Database-->>BusinessService: 返回原始数据
+        BusinessService->>BusinessService: 业务逻辑处理
+        BusinessService->>Cache: 存储计算结果
+    end
+    BusinessService-->>WebService: 返回业务结果
+    WebService-->>Frontend: JSON响应
+```
+
+### **API 设计示例**
+
+#### **Web Service API (面向前端)**
+```python
+# web-service/api/opportunities.py
+@router.get("/assets/{symbol}/opportunities")
+async def get_asset_opportunities(symbol: str, current_user: User = Depends(get_current_user)):
+    """获取资产投资机会"""
+    # 调用业务服务
+    opportunities = await business_client.get_opportunities(symbol)
+
+    return {
+        "symbol": symbol,
+        "opportunities": opportunities,
+        "user_id": current_user.id,
+        "timestamp": datetime.now()
+    }
+```
+
+#### **Business Service API (内部服务)**
+```python
+# business-service/services/opportunity.py
+@router.get("/opportunities/{symbol}")
+async def analyze_opportunities(symbol: str):
+    """分析投资机会（内部API）"""
+    # 检查缓存
+    cache_key = f"opportunities:{symbol}"
+    cached_result = await cache.get(cache_key)
+    if cached_result:
+        return cached_result
+
+    # 执行分析
+    opportunities = await opportunity_service.find_all_opportunities(symbol)
+
+    # 缓存结果
+    await cache.set(cache_key, opportunities, expire=300)  # 5分钟缓存
+
+    return opportunities
+```
+
+## 🐳 部署配置
+
+### **Docker Compose 配置**
+```yaml
+version: '3.8'
+services:
+  frontend:
+    build: ./frontend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - web-service
+    environment:
+      - REACT_APP_API_URL=http://localhost:8000
+
+  web-service:
+    build: ./web-service
+    ports:
+      - "8000:8000"
+    depends_on:
+      - business-service
+      - postgres
+    environment:
+      - DATABASE_URL=postgresql://user:password@postgres:5432/investwin
+      - BUSINESS_SERVICE_URL=http://business-service:8001
+
+  business-service:
+    build: ./business-service
+    ports:
+      - "8001:8001"
+    depends_on:
+      - postgres
+      - redis
+    environment:
+      - DATABASE_URL=postgresql://user:password@postgres:5432/investwin
+      - REDIS_URL=redis://redis:6379
+
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: investwin
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+volumes:
+  postgres_data:
+```
+
+## 🔧 开发环境
+
+### **本地开发启动顺序**
+1. **启动基础服务**：
+   ```bash
+   docker-compose up postgres redis -d
+   ```
+
+2. **启动业务服务**：
+   ```bash
+   cd business-service
+   python -m venv venv
+   source venv/bin/activate
+   pip install -r requirements.txt
+   python app/main.py  # Port: 8001
+   ```
+
+3. **启动Web服务**：
+   ```bash
+   cd web-service
+   source venv/bin/activate
+   pip install -r requirements.txt
+   python app/main.py   # Port: 8000
+   ```
+
+4. **启动前端**：
+   ```bash
+   cd frontend
+   npm start           # Port: 3000
+   ```
+
+## 🚀 开发优势
+
+### **微服务架构优势**
+1. **服务独立**：Web和业务服务独立开发、测试、部署
+2. **技术灵活**：不同服务可以使用不同的技术栈
+3. **可扩展性**：可以根据负载独立扩展特定服务
+4. **容错性好**：单个服务故障不影响整个系统
+5. **团队协作**：不同团队可以并行开发不同服务
+
+### **投资平台优势**
+6. **前后端分离**：React前端与Python后端完全分离
+7. **实时数据**：WebSocket支持毫秒级数据更新
+8. **智能分析**：基于算法的机会自动识别
+9. **风险可控**：多层次风险监控和预警
+10. **专业分析**：技术面、资金面、衍生品全覆盖
+
+## 📚 API接口设计
+
+### **Web Service API (面向前端)**
+- `POST /api/auth/login` - 用户登录
 - `GET /api/assets/` - 资产列表管理
 - `GET /api/assets/{symbol}/analysis` - 资产分析结果
 - `GET /api/opportunities/` - 投资机会列表
 - `GET /api/risk/portfolio` - 组合风险评估
 - `WebSocket /ws/realtime/` - 实时数据推送
 
+### **Business Service API (内部服务)**
+- `GET /analysis/technical/{symbol}` - 技术分析
+- `GET /analysis/fundamental/{symbol}` - 基本面分析
+- `GET /risk/assessment/{symbol}` - 风险评估
+- `GET /opportunities/scan/{symbol}` - 机会扫描
+- `POST /portfolio/optimize` - 组合优化
+
 ### **功能特点**
 - RESTful API设计，统一响应格式
 - JWT认证，权限控制
-- 请求限流，防止滥用
+- 服务间通信，异步处理
+- 缓存策略，性能优化
 - 自动生成API文档
 - 完整的错误处理机制
