@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: investwin_postgres
+    environment:
+      POSTGRES_DB: investwin
+      POSTGRES_USER: huihui
+      POSTGRES_PASSWORD: investwin123
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  backend:
+    container_name: investwin_backend
+    build: ./backend
+    environment:
+      DATABASE_URL: postgres://huihui:investwin123@postgres:5432/investwin
+    ports:
+      - "8000:8000"
+    depends_on:
+      - postgres
+    volumes:
+      - ./backend:/app
+    restart: unless-stopped
+
+  frontend:
+    container_name: investwin_frontend
+    build: ./frontend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    volumes:
+      - ./frontend:/app
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
