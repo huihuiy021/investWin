@@ -1,0 +1,23 @@
+#root {
+  margin: 0;
+  padding: 0;
+}
+
+.ant-layout-header {
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+}
+
+.ant-card-head-title {
+  font-weight: 600;
+}
+
+.ant-table-thead > tr > th {
+  background-color: #fafafa;
+  font-weight: 600;
+}
+
+.ant-typography {
+  margin-bottom: 0;
+}
